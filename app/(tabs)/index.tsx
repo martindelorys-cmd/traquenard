@@ -191,6 +191,15 @@ function sauvegarderGroupe(code: string, name: string) {
     setMesGroupes(liste);
   }
 
+  function supprimerGroupe(code: string) {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem('mesGroupes');
+    let liste: {code: string, name: string}[] = saved ? JSON.parse(saved) : [];
+    liste = liste.filter(g => g.code !== code);
+    window.localStorage.setItem('mesGroupes', JSON.stringify(liste));
+    setMesGroupes(liste);
+  }
+
   function changerDeGroupe() {
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const confirmer = window.confirm('Quitter ce groupe et retourner à l\'accueil ?');
@@ -358,14 +367,21 @@ function sauvegarderGroupe(code: string, name: string) {
         <View style={{ width: '100%', marginTop: 20 }}>
           <Text style={s.orTxt}>— mes groupes —</Text>
           {mesGroupes.map(g => (
-            <TouchableOpacity
-              key={g.code}
-              style={[s.btn, { backgroundColor: '#fff', borderWidth: 2, borderColor: PURPLE, marginBottom: 8 }]}
-              onPress={() => joinGroup(g.code)}
-              disabled={loading}
-            >
-              <Text style={[s.btnTxt, { color: PURPLE }]}>↩️ {g.name}</Text>
-            </TouchableOpacity>
+            <View key={g.code} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+              <TouchableOpacity
+                style={[s.btn, { backgroundColor: '#fff', borderWidth: 2, borderColor: PURPLE, flex: 1, marginBottom: 0 }]}
+                onPress={() => joinGroup(g.code)}
+                disabled={loading}
+              >
+                <Text style={[s.btnTxt, { color: PURPLE }]}>↩️ {g.name}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: '#fee2e2', borderRadius: 20, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+                onPress={() => supprimerGroupe(g.code)}
+              >
+                <Text style={{ color: '#dc2626', fontWeight: '900', fontSize: 16 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
       ) : null}
