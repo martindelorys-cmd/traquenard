@@ -146,8 +146,9 @@ async function createGroup() {
     setLoading(false);
   }
 
-async function joinGroup() {
-    if (!pseudo.trim() || !groupCode.trim()) {
+async function joinGroup(codeDirect?: string) {
+    const codeAUtiliser = codeDirect || groupCode;
+    if (!pseudo.trim() || !codeAUtiliser.trim()) {
       const msg = 'Remplis ton prénom et le code du groupe !';
       if (typeof window !== 'undefined') window.alert(msg);
       else Alert.alert(msg);
@@ -155,7 +156,7 @@ async function joinGroup() {
     }
     setLoading(true);
     const { getDocs, query, where } = await import('firebase/firestore');
-    const q = query(collection(db, 'groups'), where('code', '==', groupCode.toUpperCase()));
+    const q = query(collection(db, 'groups'), where('code', '==', codeAUtiliser.toUpperCase());
     const snap = await getDocs(q);
     if (snap.empty) {
       setLoading(false);
@@ -191,17 +192,30 @@ function sauvegarderGroupe(code: string, name: string) {
   }
 
   function changerDeGroupe() {
-    const confirmer = typeof window !== 'undefined'
-      ? window.confirm('Quitter ce groupe et retourner à l\'accueil ?')
-      : true;
-    if (!confirmer) return;
-    setGroupId('');
-    setGroup(null);
-    setGroupCode('');
-    setGroupName('');
-    setSelectedCat('');
-    setLoserDefi('');
-    setScreen('welcome');
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const confirmer = window.confirm('Quitter ce groupe et retourner à l\'accueil ?');
+      if (!confirmer) return;
+      setGroupId('');
+      setGroup(null);
+      setGroupCode('');
+      setGroupName('');
+      setSelectedCat('');
+      setLoserDefi('');
+      setScreen('welcome');
+    } else {
+      Alert.alert('Changer de groupe', 'Quitter ce groupe et retourner à l\'accueil ?', [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Confirmer', onPress: () => {
+          setGroupId('');
+          setGroup(null);
+          setGroupCode('');
+          setGroupName('');
+          setSelectedCat('');
+          setLoserDefi('');
+          setScreen('welcome');
+        }},
+      ]);
+    }
   }
 
   async function ajouterDefiCustom() {
@@ -347,7 +361,7 @@ function sauvegarderGroupe(code: string, name: string) {
             <TouchableOpacity
               key={g.code}
               style={[s.btn, { backgroundColor: '#fff', borderWidth: 2, borderColor: PURPLE, marginBottom: 8 }]}
-              onPress={() => { setGroupCode(g.code); joinGroup(); }}
+              onPress={() => joinGroup(g.code)}
               disabled={loading}
             >
               <Text style={[s.btnTxt, { color: PURPLE }]}>↩️ {g.name}</Text>
