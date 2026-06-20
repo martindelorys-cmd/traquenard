@@ -200,31 +200,14 @@ function sauvegarderGroupe(code: string, name: string) {
     setMesGroupes(liste);
   }
 
-  function changerDeGroupe() {
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      const confirmer = window.confirm('Quitter ce groupe et retourner à l\'accueil ?');
-      if (!confirmer) return;
-      setGroupId('');
-      setGroup(null);
-      setGroupCode('');
-      setGroupName('');
-      setSelectedCat('');
-      setLoserDefi('');
-      setScreen('welcome');
-    } else {
-      Alert.alert('Changer de groupe', 'Quitter ce groupe et retourner à l\'accueil ?', [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Confirmer', onPress: () => {
-          setGroupId('');
-          setGroup(null);
-          setGroupCode('');
-          setGroupName('');
-          setSelectedCat('');
-          setLoserDefi('');
-          setScreen('welcome');
-        }},
-      ]);
-    }
+function changerDeGroupe() {
+    setGroupId('');
+    setGroup(null);
+    setGroupCode('');
+    setGroupName('');
+    setSelectedCat('');
+    setLoserDefi('');
+    setScreen('welcome');
   }
 
   async function ajouterDefiCustom() {
