@@ -87,6 +87,7 @@ export default function App() {
   const [selectedCat, setSelectedCat] = useState('');
   const [loserDefi, setLoserDefi]     = useState('');
   const [showCode, setShowCode]       = useState(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [showAddDefi, setShowAddDefi] = useState(false);
   const [mesGroupes, setMesGroupes] = useState<{code: string, name: string}[]>([]);
   const [newDefiText, setNewDefiText] = useState('');
@@ -201,6 +202,11 @@ function sauvegarderGroupe(code: string, name: string) {
   }
 
 function changerDeGroupe() {
+    setShowQuitConfirm(true);
+  }
+
+  function confirmerChangerDeGroupe() {
+    setShowQuitConfirm(false);
     setGroupId('');
     setGroup(null);
     setGroupCode('');
@@ -567,6 +573,17 @@ function changerDeGroupe() {
             <Text style={s.codeValue}>{group?.code}</Text>
             <Text style={s.codeSub}>Partage ce code pour rejoindre la partie !</Text>
             <TouchableOpacity style={[s.btn, { marginTop: 16 }]} onPress={() => setShowCode(false)}><Text style={s.btnTxt}>Fermer</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showQuitConfirm} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={s.modalBox}>
+            <Text style={s.modalTitle}>Changer de groupe ?</Text>
+            <Text style={{ textAlign: 'center', color: '#555', marginBottom: 16 }}>Tu vas quitter ce groupe et retourner à l'accueil. Tu pourras le rejoindre à nouveau plus tard.</Text>
+            <TouchableOpacity style={s.btn} onPress={confirmerChangerDeGroupe}><Text style={s.btnTxt}>Confirmer</Text></TouchableOpacity>
+            <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowQuitConfirm(false)}><Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
