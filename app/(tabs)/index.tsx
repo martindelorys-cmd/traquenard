@@ -88,7 +88,7 @@ export default function App() {
   const [loserDefi, setLoserDefi]     = useState('');
   const [showCode, setShowCode]       = useState(false);
   const [showAddDefi, setShowAddDefi] = useState(false);
-  const [dernierGroupe, setDernierGroupe] = useState('');
+  const [mesGroupes, setMesGroupes] = useState<{code: string, name: string}[]>([]);
   const [newDefiText, setNewDefiText] = useState('');
   const [newDefiPts, setNewDefiPts]   = useState('10');
 
@@ -105,10 +105,10 @@ export default function App() {
     return unsub;
   }, [groupId]);
 
-  useEffect(() => {
+useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = window.localStorage.getItem('dernierGroupeCode');
-      if (saved) setDernierGroupe(saved);
+      const saved = window.localStorage.getItem('mesGroupes');
+      if (saved) setMesGroupes(JSON.parse(saved));
     }
   }, []);
 
@@ -141,7 +141,7 @@ async function createGroup() {
       proofs: [],
     });
     setGroupId(ref.id);
-    if (typeof window !== 'undefined') window.localStorage.setItem('dernierGroupeCode', code);
+    sauvegarderGroupe(code, groupName);
     setScreen('lobby');
     setLoading(false);
   }
@@ -169,7 +169,7 @@ async function joinGroup() {
       members: arrayUnion({ pseudo, points: 0, done: [] }),
     });
     setGroupId(groupDoc.id);
-    if (typeof window !== 'undefined') window.localStorage.setItem('dernierGroupeCode', groupCode.toUpperCase());
+    sauvegarderGroupe(groupDoc.data().code, groupDoc.data().name);
     setScreen('lobby');
     setLoading(false);
   }
@@ -177,6 +177,17 @@ async function joinGroup() {
   async function startGame() {
     await updateDoc(doc(db, 'groups', groupId), { started: true });
     setScreen('game');
+  }
+
+function sauvegarderGroupe(code: string, name: string) {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem('mesGroupes');
+    let liste: {code: string, name: string}[] = saved ? JSON.parse(saved) : [];
+    liste = liste.filter(g => g.code !== code);
+    liste.unshift({ code, name });
+    liste = liste.slice(0, 5);
+    window.localStorage.setItem('mesGroupes', JSON.stringify(liste));
+    setMesGroupes(liste);
   }
 
   function changerDeGroupe() {
@@ -329,14 +340,20 @@ async function joinGroup() {
         {loading ? <ActivityIndicator color={PURPLE} /> : <Text style={[s.btnTxt, { color: PURPLE }]}>Rejoindre</Text>}
       </TouchableOpacity>
 
-      {dernierGroupe ? (
-        <TouchableOpacity
-          style={[s.btn, { backgroundColor: '#fff', borderWidth: 2, borderColor: PURPLE, marginTop: 16 }]}
-          onPress={() => { setGroupCode(dernierGroupe); joinGroup(); }}
-          disabled={loading}
-        >
-          <Text style={[s.btnTxt, { color: PURPLE }]}>↩️ Reprendre {dernierGroupe}</Text>
-        </TouchableOpacity>
+      {mesGroupes.length > 0 ? (
+        <View style={{ width: '100%', marginTop: 20 }}>
+          <Text style={s.orTxt}>— mes groupes —</Text>
+          {mesGroupes.map(g => (
+            <TouchableOpacity
+              key={g.code}
+              style={[s.btn, { backgroundColor: '#fff', borderWidth: 2, borderColor: PURPLE, marginBottom: 8 }]}
+              onPress={() => { setGroupCode(g.code); joinGroup(); }}
+              disabled={loading}
+            >
+              <Text style={[s.btnTxt, { color: PURPLE }]}>↩️ {g.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       ) : null}
     </ScrollView>
   );
