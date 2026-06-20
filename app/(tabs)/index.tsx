@@ -104,9 +104,25 @@ export default function App() {
     return unsub;
   }, [groupId]);
 
-  async function createGroup() {
-    if (!pseudo.trim() || !groupName.trim() || !selectedCat || !loserDefi.trim())
-      return Alert.alert('Remplis tous les champs !');
+async function createGroup() {
+    if (!groupName.trim()) {
+      const msg = 'Donne un nom à ton groupe !';
+      if (typeof window !== 'undefined') window.alert(msg);
+      else Alert.alert(msg);
+      return;
+    }
+    if (!selectedCat) {
+      const msg = 'Choisis une catégorie de défis !';
+      if (typeof window !== 'undefined') window.alert(msg);
+      else Alert.alert(msg);
+      return;
+    }
+    if (!loserDefi.trim()) {
+      const msg = 'Indique le défi du perdant !';
+      if (typeof window !== 'undefined') window.alert(msg);
+      else Alert.alert(msg);
+      return;
+    }
     setLoading(true);
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
     const ref = await addDoc(collection(db, 'groups'), {
