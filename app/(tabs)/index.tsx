@@ -255,8 +255,7 @@ function sauvegarderGroupe(code: string, name: string) {
 
   async function posterDefi(challenge: any) {
     if (typeof document !== 'undefined') {
-      const choix = window.confirm(`🎯 Réaliser ce défi : "${challenge.text}"\n\nClique sur OK pour importer une photo ou une vidéo.`);
-      if (choix) ouvrirPellicule(challenge);
+      ouvrirPellicule(challenge);
       return;
     }
     Alert.alert('🎯 Réaliser ce défi', challenge.text, [
