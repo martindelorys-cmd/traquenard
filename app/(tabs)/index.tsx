@@ -1,7 +1,6 @@
-import { ResizeMode, Video } from 'expo-av';
-import { addDoc, arrayUnion, collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, Image, Modal } from 'react-native';
+import { collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 const DEFIS: Record<string, { id: number; text: string; points: number; emoji: string }[]> = {
@@ -98,10 +97,10 @@ export default function App() {
   const challenges = group?.challenges || [];
 
   useEffect(() => {
-    if (!groupId) return;
+    if (!groupId || !db) return;
     const unsub = onSnapshot(doc(db, 'groups', groupId), snap => {
       if (snap.exists()) setGroup(snap.data());
-    });
+    }, (err) => console.error("Erreur Firestore sécurisée:", err));
     return unsub;
   }, [groupId]);
 
@@ -145,35 +144,44 @@ export default function App() {
 
   async function ajouterDefiCustom() {
     if (!newDefiText.trim()) return Alert.alert('Décris le défi !');
-    const newDefi = {
-      id: Date.now(),
-      text: newDefiText.trim(),
-      points: parseInt(newDefiPts) || 10,
-      emoji: '⚡',
-      custom: true,
-    };
-    await updateDoc(doc(db, 'groups', groupId), {
-      challenges: arrayUnion(newDefi),
-    });
-    setNewDefiText('');
-    setNewDefiPts('10');
-    setShowAddDefi(false);
-    Alert.alert('Défi ajouté !');
+    if (loading) return;
+    try {
+      setLoading(true);
+      const newDefi = {
+        id: Date.now(),
+        text: newDefiText.trim(),
+        points: parseInt(newDefiPts) || 10,
+        emoji: '⚡',
+        custom: true,
+      };
+      await updateDoc(doc(db, 'groups', groupId), {
+        challenges: arrayUnion(newDefi),
+      });
+      setNewDefiText('');
+      setNewDefiPts('10');
+      setShowAddDefi(false);
+      setLoading(false);
+      if (typeof window !== 'undefined') window.alert('Défi ajouté !');
+      else Alert.alert('Défi ajouté !');
+    } catch (err) {
+      setLoading(false);
+    }
   }
 
   async function posterDefi(challenge: any) {
-    Alert.alert(
-      '🎯 Réaliser ce défi',
-      challenge.text,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { text: '📷 Caméra', onPress: () => ouvrirCamera(challenge) },
-        { text: '🖼️ Pellicule', onPress: () => ouvrirPellicule(challenge) },
-      ]
-    );
+    if (typeof document !== 'undefined') {
+      const choix = window.confirm(`🎯 Réaliser ce défi : "${challenge.text}"\n\nClique sur OK pour importer une photo ou une vidéo.`);
+      if (choix) ouvrirPellicule(challenge);
+      return;Reception desk
+    }
+    Alert.alert('🎯 Réaliser ce défi', challenge.text, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: '📷 Caméra', onPress: () => ouvrirCamera(challenge) },
+      { text: '🖼️ Pellicule', onPress: () => ouvrirPellicule(challenge) },
+    ]);
   }
 
-async function ouvrirCamera(challenge: any) {
+  async function ouvrirCamera(challenge: any) {
     const ImagePicker = await import('expo-image-picker');
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) return Alert.alert('Permission refusée');
@@ -182,6 +190,19 @@ async function ouvrirCamera(challenge: any) {
   }
 
   async function ouvrirPellicule(challenge: any) {
+    if (typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,video/*';
+      input.onchange = async (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const type = file.type.startsWith('video') ? 'video' : 'image';
+        await envoyerPreuve(challenge, '', type, file);
+      };
+      input.click();
+      return;
+    }
     const ImagePicker = await import('expo-image-picker');
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return Alert.alert('Permission refusée');
@@ -189,38 +210,28 @@ async function ouvrirCamera(challenge: any) {
     if (!result.canceled) await envoyerPreuve(challenge, result.assets[0].uri, result.assets[0].type || 'image');
   }
 
- async function uploadVersCloudinary(uri: string, type: string): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', {
-      uri,
-      type: type === 'video' ? 'video/mp4' : 'image/jpeg',
-      name: type === 'video' ? 'proof.mp4' : 'proof.jpg',
-    } as any);
-    formData.append('upload_preset', 'traquenard');
-    const resourceType = type === 'video' ? 'video' : 'image';
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/dp64sdpit/${resourceType}/upload`,
-      { method: 'POST', body: formData }
-    );
-    const data = await response.json();
-    return data.secure_url;
-  }
-
-  async function envoyerPreuve(challenge: any, uri: string, type: string) {
-    Alert.alert('⏳ Upload en cours...', 'Patiente quelques secondes !');
-    const url = await uploadVersCloudinary(uri, type);
-    const newProof = {
-      id: Date.now().toString(),
-      pseudo, challenge, mediaUri: url, mediaType: type,
-      votes: [], timestamp: Date.now(),
-    };
-    const updatedMembers = group.members.map((m: any) =>
-      m.pseudo === pseudo ? { ...m, done: [...m.done, challenge.id] } : m
-    );
-    await updateDoc(doc(db, 'groups', groupId), {
-      proofs: arrayUnion(newProof), members: updatedMembers,
-    });
-    Alert.alert('📸 Posté !', 'Tes potes peuvent voter !');
+  async function envoyerPreuve(challenge: any, uri: string, type: string, file?: File) {
+    try {
+      const formData = new FormData();
+      formData.append('upload_preset', 'traquenard');
+      if (file) formData.append('file', file);
+      else formData.append('file', { uri, type: type === 'video' ? 'video/mp4' : 'image/jpeg', name: type === 'video' ? 'proof.mp4' : 'proof.jpg' } as any);
+      
+      const resourceType = type === 'video' ? 'video' : 'image';
+      const response = await fetch(`https://api.cloudinary.com/v1_1/dp64sdpit/${resourceType}/upload`, { method: 'POST', body: formData });
+      const data = await response.json();
+      const url = data.secure_url;
+      
+      const newProof = { id: Date.now().toString(), pseudo, challenge, mediaUri: url, mediaType: type, votes: [], timestamp: Date.now() };
+      const updatedMembers = group.members.map((m: any) => m.pseudo === pseudo ? { ...m, done: [...m.done, challenge.id] } : m);
+      
+      await updateDoc(doc(db, 'groups', groupId), { proofs: arrayUnion(newProof), members: updatedMembers });
+      
+      if (typeof window !== 'undefined') window.alert('📸 Preuve postée !');
+      else Alert.alert('📸 Posté !', 'Tes potes peuvent voter !');
+    } catch (error) {
+      Alert.alert('❌ Échec de l\'envoi');
+    }
   }
 
   async function voter(proof: any, validated: boolean) {
@@ -229,43 +240,47 @@ async function ouvrirCamera(challenge: any) {
       const newVotes = [...(p.votes || []), { pseudo, validated }];
       const total = newVotes.length;
       const pour  = newVotes.filter((v: any) => v.validated).length;
-      const needed = Math.ceil((group.members.length - 1) / 2) + 1;
+      const needed = Math.ceil((group.members.length - 1) / 2);
+      
       if (total >= needed && pour > total / 2) {
-        const updatedMembers = group.members.map((m: any) =>
-          m.pseudo === proof.pseudo ? { ...m, points: m.points + proof.challenge.points } : m
-        );
+        const updatedMembers = group.members.map((m: any) => m.pseudo === proof.pseudo ? { ...m, points: m.points + proof.challenge.points } : m);
         updateDoc(doc(db, 'groups', groupId), { members: updatedMembers });
       }
       return { ...p, votes: newVotes };
     });
+    
     await updateDoc(doc(db, 'groups', groupId), { proofs: updatedProofs });
     Alert.alert(validated ? '✅ Validé !' : '❌ Refusé !');
   }
 
-  // ── WELCOME ────────────────────────────────────────────────────────────────
+  // ── ÉCRANS DE DÉMARRAGE ───────────────────────────────────────────────────
   if (screen === 'welcome') return (
     <ScrollView contentContainerStyle={s.center}>
       <Text style={s.bigLogo}>Traquenard</Text>
       <Text style={s.tagline}>Défis entre potes 🔥</Text>
       <TextInput style={s.input} placeholder="Ton prénom" value={pseudo} onChangeText={setPseudo} />
+      
       <TouchableOpacity style={s.btn} onPress={() => pseudo.trim() ? setScreen('create') : Alert.alert('Entre ton prénom !')}>
         <Text style={s.btnTxt}>Créer un groupe →</Text>
       </TouchableOpacity>
+      
       <Text style={s.orTxt}>— ou rejoindre —</Text>
       <TextInput style={s.input} placeholder="Code du groupe" value={groupCode} onChangeText={setGroupCode} autoCapitalize="characters" />
+      
       <TouchableOpacity style={[s.btn, { backgroundColor: '#ede9fe' }]} onPress={joinGroup} disabled={loading}>
         {loading ? <ActivityIndicator color={PURPLE} /> : <Text style={[s.btnTxt, { color: PURPLE }]}>Rejoindre</Text>}
       </TouchableOpacity>
     </ScrollView>
   );
 
-  // ── CREATE ─────────────────────────────────────────────────────────────────
   if (screen === 'create') return (
     <ScrollView contentContainerStyle={s.formScreen}>
       <TouchableOpacity onPress={() => setScreen('welcome')}><Text style={s.back}>← Retour</Text></TouchableOpacity>
       <Text style={s.formTitle}>Créer un groupe</Text>
+      
       <Text style={s.label}>Nom du groupe</Text>
       <TextInput style={s.input} placeholder="Ex : Bande de l'été 🌞" value={groupName} onChangeText={setGroupName} />
+      
       <Text style={s.label}>Catégorie de défis</Text>
       {CATEGORIES.map(cat => (
         <TouchableOpacity key={cat.key} style={[s.catCard, selectedCat === cat.key && s.catSelected]} onPress={() => setSelectedCat(cat.key)}>
@@ -273,28 +288,32 @@ async function ouvrirCamera(challenge: any) {
           <Text style={s.catDesc}>{cat.desc}</Text>
         </TouchableOpacity>
       ))}
+      
       <Text style={s.label}>Défi du perdant 🍽️</Text>
       <TextInput style={s.input} placeholder="Ex : payer le restau, se raser la tête..." value={loserDefi} onChangeText={setLoserDefi} />
+      
       <TouchableOpacity style={[s.btn, { marginTop: 8 }]} onPress={createGroup} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnTxt}>Créer et inviter mes potes 🚀</Text>}
       </TouchableOpacity>
     </ScrollView>
   );
 
-  // ── LOBBY ──────────────────────────────────────────────────────────────────
   if (screen === 'lobby') return (
     <ScrollView contentContainerStyle={s.formScreen}>
       <Text style={s.bigLogo}>Traquenard</Text>
       <Text style={s.groupName}>{group?.name}</Text>
+      
       <View style={s.codeBox}>
         <Text style={s.codeLabel}>Code d'invitation</Text>
         <Text style={s.codeValue}>{group?.code}</Text>
         <Text style={s.codeSub}>Partage ce code à tes potes !</Text>
       </View>
+      
       <View style={s.infoRow}>
         <Text style={s.infoTag}>{CATEGORIES.find(c => c.key === group?.category)?.label}</Text>
         <Text style={s.infoTag}>🍽️ {group?.loserDefi}</Text>
       </View>
+      
       <Text style={s.sectionTitle}>Membres ({group?.members?.length})</Text>
       {group?.members?.map((m: any) => (
         <View key={m.pseudo} style={s.memberRow}>
@@ -302,113 +321,49 @@ async function ouvrirCamera(challenge: any) {
           {m.pseudo === group.admin && <Text style={s.adminTag}>👑 Admin</Text>}
         </View>
       ))}
-
-      {/* Ajouter un défi custom dans le lobby */}
+      
       <TouchableOpacity style={[s.btn, { backgroundColor: '#ede9fe', marginTop: 16 }]} onPress={() => setShowAddDefi(true)}>
         <Text style={[s.btnTxt, { color: PURPLE }]}>➕ Ajouter un défi custom</Text>
       </TouchableOpacity>
-
+      
       {pseudo === group?.admin && !group?.started && (
         <TouchableOpacity style={[s.btn, { marginTop: 12 }]} onPress={startGame}>
           <Text style={s.btnTxt}>Lancer la partie 🔥</Text>
         </TouchableOpacity>
       )}
+      
       {group?.started && (
         <TouchableOpacity style={[s.btn, { marginTop: 12 }]} onPress={() => setScreen('game')}>
           <Text style={s.btnTxt}>Entrer dans le jeu →</Text>
         </TouchableOpacity>
       )}
-      {!group?.started && pseudo !== group?.admin && (
-        <Text style={s.waiting}>En attente que l'admin lance la partie...</Text>
-      )}
-
-      {/* Modal ajouter défi */}
+      
+      {!group?.started && pseudo !== group?.admin && <Text style={s.waiting}>En attente que l'admin lance la partie...</Text>}
+      
       <Modal visible={showAddDefi} transparent animationType="slide">
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
             <Text style={s.modalTitle}>➕ Nouveau défi</Text>
             <TextInput style={s.input} placeholder="Décris le défi..." value={newDefiText} onChangeText={setNewDefiText} multiline />
             <TextInput style={s.input} placeholder="Points (ex: 20)" value={newDefiPts} onChangeText={setNewDefiPts} keyboardType="numeric" />
-            <TouchableOpacity style={s.btn} onPress={ajouterDefiCustom}>
-              <Text style={s.btnTxt}>Ajouter ✅</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowAddDefi(false)}>
-              <Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text>
-            </TouchableOpacity>
-          </View>
+            <TouchableOpacity style={s.btn} onPress={ajouterDefiCustom}><Text style={s.btnTxt}>Ajouter ✅</Text></TouchableOpacity>
+            <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowAddDefi(false)}><Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text></TouchableOpacity>          </View>
         </View>
       </Modal>
     </ScrollView>
   );
 
-  // ── STORIES ────────────────────────────────────────────────────────────────
-  if (screen === 'stories') {
-    const pending = (group?.proofs || []).filter((p: any) =>
-      p.pseudo !== pseudo && !(p.votes || []).find((v: any) => v.pseudo === pseudo)
-    );
-    return (
-      <View style={s.root}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => setScreen('game')}><Text style={s.headerBack}>←</Text></TouchableOpacity>
-          <Text style={s.logo}>Votes 🗳️</Text>
-          <Text style={s.pts}>{pending.length} en attente</Text>
-        </View>
-        <ScrollView style={s.content}>
-          {pending.length === 0 && <View style={s.emptyBox}><Text style={s.emptyIcon}>🎉</Text><Text style={s.emptyTxt}>Aucune preuve à voter !</Text></View>}
-          {pending.map((proof: any) => (
-            <View key={proof.id} style={s.proofCard}>
-              {proof.mediaUri && proof.mediaType === 'video'
-                ? <Video source={{ uri: proof.mediaUri }} style={s.proofImg} useNativeControls resizeMode={ResizeMode.CONTAIN} />
-                : proof.mediaUri && <Image source={{ uri: proof.mediaUri }} style={s.proofImg} />
-              }
-              <Text style={s.proofEmoji}>{proof.challenge.emoji}</Text>
-              <Text style={s.proofName}>{proof.pseudo} a relevé :</Text>
-              <Text style={s.proofText}>"{proof.challenge.text}"</Text>
-              <Text style={s.proofPts}>+{proof.challenge.points} pts en jeu</Text>
-              <Text style={s.proofVotes}>{(proof.votes || []).length} vote(s) sur {group.members.length - 1}</Text>
-              <View style={s.voteRow}>
-                <TouchableOpacity style={s.voteNo}  onPress={() => voter(proof, false)}><Text style={s.voteTxt}>❌ Refuser</Text></TouchableOpacity>
-                <TouchableOpacity style={s.voteYes} onPress={() => voter(proof, true)}><Text style={s.voteTxt}>✅ Valider</Text></TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // ── BOARD ──────────────────────────────────────────────────────────────────
-  if (screen === 'board') {
-    const sorted = [...(group?.members || [])].sort((a: any, b: any) => b.points - a.points);
-    const loser  = sorted[sorted.length - 1];
-    return (
-      <View style={s.root}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => setScreen('game')}><Text style={s.headerBack}>←</Text></TouchableOpacity>
-          <Text style={s.logo}>Classement 🏆</Text>
-          <View />
-        </View>
-        <ScrollView style={s.content}>
-          {sorted.map((m: any, i: number) => (
-            <View key={m.pseudo} style={[s.rankRow, m.pseudo === pseudo && s.rankMe]}>
-              <Text style={s.rankPos}>{['🥇','🥈','🥉'][i] || `#${i+1}`}</Text>
-              <Text style={s.rankName}>{m.pseudo}{m.pseudo === pseudo ? ' (toi)' : ''}</Text>
-              <Text style={s.rankPts}>{m.points} pts</Text>
-            </View>
-          ))}
-          {loser && <View style={s.loserBox}><Text style={s.loserTxt}>😬 <Text style={{ fontWeight: '900' }}>{loser.pseudo}</Text> devra : {group?.loserDefi}</Text></View>}
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // ── GAME ───────────────────────────────────────────────────────────────────
-  const pendingCount = (group?.proofs || []).filter((p: any) =>
+  // ── INTERFACE PRINCIPALE DE NAVIGATION PARTAGÉE ───────────────────────────
+  const pending = (group?.proofs || []).filter((p: any) =>
     p.pseudo !== pseudo && !(p.votes || []).find((v: any) => v.pseudo === pseudo)
-  ).length;
+  );
+  const pendingCount = pending.length;
+  const sortedMembers = [...(group?.members || [])].sort((a: any, b: any) => b.points - a.points);
+  const loser = sortedMembers[sortedMembers.length - 1];
 
   return (
     <View style={s.root}>
+      {/* HEADER COMPLET */}
       <View style={s.header}>
         <Text style={s.logo}>Traquenard</Text>
         <View style={s.headerRight}>
@@ -419,70 +374,111 @@ async function ouvrirCamera(challenge: any) {
         </View>
       </View>
 
+      {/* ZONE CENTRALE CHANGEMENT D'ONGLET */}
       <ScrollView style={s.content}>
-        {pendingCount > 0 && (
-          <TouchableOpacity style={s.storiesBar} onPress={() => setScreen('stories')}>
-            <Text style={s.storiesBarTxt}>🗳️ {pendingCount} preuve{pendingCount > 1 ? 's' : ''} à juger — Voter</Text>
-          </TouchableOpacity>
+        
+        {/* ONGLET 1 : LES DÉFIS */}
+        {screen === 'game' && (
+          <View style={{ paddingBottom: 40 }}>
+            {pendingCount > 0 && (              <TouchableOpacity style={s.storiesBar} onPress={() => setScreen('stories')}>
+                <Text style={s.storiesBarTxt}>🗳️ {pendingCount} preuve{pendingCount > 1 ? 's' : ''} à juger — Voter</Text>
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity style={s.addDefiBtn} onPress={() => setShowAddDefi(true)}>
+              <Text style={s.addDefiBtnTxt}>➕ Ajouter un défi custom</Text>
+            </TouchableOpacity>
+            
+            <Text style={s.sectionTitle}>Tes défis {CATEGORIES.find(c => c.key === group?.category)?.label}</Text>
+            {challenges.map((c: any) => (
+              <View key={c.id} style={[s.card, myDone.includes(c.id) && s.cardDone]}>
+                <View style={s.cardTop}>
+                  <Text style={s.emoji}>{c.emoji}</Text>
+                  {c.custom && <Text style={s.customTag}>⚡ Custom</Text>}
+                  <Text style={s.cardPts}>+{c.points} pts</Text>
+                </View>
+                <Text style={s.cardText}>{c.text}</Text>
+                {myDone.includes(c.id)
+                  ? <Text style={s.validated}>✅ Preuve postée !</Text>
+                  : <TouchableOpacity style={s.doBtn} onPress={() => posterDefi(c)}><Text style={s.doBtnTxt}>🎯 Réaliser ce défi</Text></TouchableOpacity>
+                }
+              </View>
+            ))}
+          </View>
         )}
 
-        {/* Bouton ajouter défi */}
-        <TouchableOpacity style={s.addDefiBtn} onPress={() => setShowAddDefi(true)}>
-          <Text style={s.addDefiBtnTxt}>➕ Ajouter un défi custom</Text>
-        </TouchableOpacity>
-
-        <Text style={s.sectionTitle}>Tes défis {CATEGORIES.find(c => c.key === group?.category)?.label}</Text>
-        {challenges.map((c: any) => (
-          <View key={c.id} style={[s.card, myDone.includes(c.id) && s.cardDone]}>
-            <View style={s.cardTop}>
-              <Text style={s.emoji}>{c.emoji}</Text>
-              {c.custom && <Text style={s.customTag}>⚡ Custom</Text>}
-              <Text style={s.cardPts}>+{c.points} pts</Text>
-            </View>
-            <Text style={s.cardText}>{c.text}</Text>
-            {myDone.includes(c.id)
-              ? <Text style={s.validated}>✅ Preuve postée !</Text>
-              : <TouchableOpacity style={s.doBtn} onPress={() => posterDefi(c)}>
-                  <Text style={s.doBtnTxt}>🎯 Réaliser ce défi</Text>
-                </TouchableOpacity>
-            }
+        {/* ONGLET 2 : VOTES (STORIES) */}
+        {screen === 'stories' && (
+          <View style={{ paddingBottom: 40 }}>
+            <Text style={s.sectionTitle}>Votes en cours 🗳️</Text>
+            {pendingCount === 0 && <View style={s.emptyBox}><Text style={s.emptyIcon}>🎉</Text><Text style={s.emptyTxt}>Aucune preuve à voter !</Text></View>}
+            
+            {pending.map((proof: any) => (
+              <View key={proof.id} style={s.proofCard}>
+                {proof.mediaUri && proof.mediaType === 'video' ? (
+                  <video src={proof.mediaUri} style={s.webVideo} controls playsInline />
+                ) : (
+                  proof.mediaUri && <Image source={{ uri: proof.mediaUri }} style={s.proofImg} />
+                )}
+                
+                <Text style={s.proofEmoji}>{proof.challenge.emoji}</Text>
+                <Text style={s.proofName}><Text style={{ color: PURPLE, fontWeight: '900' }}>{proof.pseudo}</Text> doit :</Text>
+                <Text style={s.proofText}>"{proof.challenge.text}"</Text>
+                <Text style={s.proofPts}>+{proof.challenge.points} pts en jeu</Text>
+                <Text style={s.proofVotes}>{(proof.votes || []).length} vote(s) sur {group.members.length - 1}</Text>
+                
+                <View style={s.voteRow}>
+                  <TouchableOpacity style={s.voteNo}  onPress={() => voter(proof, false)}><Text style={s.voteTxt}>❌ Refuser</Text></TouchableOpacity>
+                  <TouchableOpacity style={s.voteYes} onPress={() => voter(proof, true)}><Text style={s.voteTxt}>✅ Valider</Text></TouchableOpacity>
+                </View>
+              </View>
+            ))}
           </View>
-        ))}
+        )}
+
+        {/* ONGLET 3 : CLASSEMENT */}
+        {screen === 'board' && (
+          <View style={{ paddingBottom: 40 }}>
+            <Text style={s.sectionTitle}>Classement 🏆</Text>
+            {sortedMembers.map((m: any, i: number) => (
+              <View key={m.pseudo} style={[s.rankRow, m.pseudo === pseudo && s.rankMe]}>
+                <Text style={s.rankPos}>{['🥇','🥈','🥉'][i] || `#${i+1}`}</Text>
+                <Text style={s.rankName}>{m.pseudo}{m.pseudo === pseudo ? ' (toi)' : ''}</Text>
+                <Text style={s.rankPts}>{m.points} pts</Text>
+              </View>
+            ))}
+            {loser && <View style={s.loserBox}><Text style={s.loserTxt}>😬 <Text style={{ fontWeight: '900' }}>{loser.pseudo}</Text> devra : {group?.loserDefi}</Text></View>}
+          </View>
+        )}
       </ScrollView>
 
+      {/* MENU BAS (FIXE ET NAVIGABLE) */}
       <View style={s.nav}>
-        <TouchableOpacity style={s.navBtn} onPress={() => setScreen('game')}><Text style={s.navIcon}>🎯</Text><Text style={s.navLbl}>Défis</Text></TouchableOpacity>
-        <TouchableOpacity style={s.navBtn} onPress={() => setScreen('stories')}><Text style={s.navIcon}>🗳️</Text><Text style={s.navLbl}>Votes{pendingCount > 0 ? ` (${pendingCount})` : ''}</Text></TouchableOpacity>
-        <TouchableOpacity style={s.navBtn} onPress={() => setScreen('board')}><Text style={s.navIcon}>🏆</Text><Text style={s.navLbl}>Classement</Text></TouchableOpacity>
+        <TouchableOpacity style={[s.navBtn, screen === 'game' && s.navBtnActive]} onPress={() => setScreen('game')}><Text style={s.navIcon}>🎯</Text><Text style={s.navLbl}>Défis</Text></TouchableOpacity>
+        <TouchableOpacity style={[s.navBtn, screen === 'stories' && s.navBtnActive]} onPress={() => setScreen('stories')}><Text style={s.navIcon}>🗳️</Text><Text style={s.navLbl}>Votes{pendingCount > 0 ? ` (${pendingCount})` : ''}</Text></TouchableOpacity>
+        <TouchableOpacity style={[s.navBtn, screen === 'board' && s.navBtnActive]} onPress={() => setScreen('board')}><Text style={s.navIcon}>🏆</Text><Text style={s.navLbl}>Classement</Text></TouchableOpacity>
       </View>
 
-      {/* Modal code du groupe */}
+      {/* POPUPS SÉCURISÉES */}
       <Modal visible={showCode} transparent animationType="fade">
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
             <Text style={s.modalTitle}>Inviter des potes 🔗</Text>
             <Text style={s.codeValue}>{group?.code}</Text>
             <Text style={s.codeSub}>Partage ce code pour rejoindre la partie !</Text>
-            <TouchableOpacity style={[s.btn, { marginTop: 16 }]} onPress={() => setShowCode(false)}>
-              <Text style={s.btnTxt}>Fermer</Text>
-            </TouchableOpacity>
+            <TouchableOpacity style={[s.btn, { marginTop: 16 }]} onPress={() => setShowCode(false)}><Text style={s.btnTxt}>Fermer</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Modal ajouter défi */}
       <Modal visible={showAddDefi} transparent animationType="slide">
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
             <Text style={s.modalTitle}>➕ Nouveau défi</Text>
             <TextInput style={s.input} placeholder="Décris le défi..." value={newDefiText} onChangeText={setNewDefiText} multiline />
             <TextInput style={s.input} placeholder="Points (ex: 20)" value={newDefiPts} onChangeText={setNewDefiPts} keyboardType="numeric" />
-            <TouchableOpacity style={s.btn} onPress={ajouterDefiCustom}>
-              <Text style={s.btnTxt}>Ajouter ✅</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowAddDefi(false)}>
-              <Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text>
-            </TouchableOpacity>
+            <TouchableOpacity style={s.btn} onPress={ajouterDefiCustom}><Text style={s.btnTxt}>Ajouter ✅</Text></TouchableOpacity>
+            <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowAddDefi(false)}><Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -520,13 +516,12 @@ const s = StyleSheet.create({
   adminTag:     { fontSize: 12, color: '#92400e', backgroundColor: '#fef3c7', padding: 4, borderRadius: 8 },
   waiting:      { textAlign: 'center', color: '#888', marginTop: 20, fontStyle: 'italic' },
   header:       { backgroundColor: PURPLE, padding: 20, paddingTop: 50, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerBack:   { color: '#fff', fontSize: 22, fontWeight: '700' },
-  headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logo:         { color: '#fff', fontSize: 20, fontWeight: '900' },
   pts:          { backgroundColor: '#fff', color: PURPLE, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, fontSize: 13 },
   codeBtn:      { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   codeBtnTxt:   { color: '#fff', fontWeight: '700', fontSize: 13 },
-  content:      { padding: 16 },
+  headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  content:      { padding: 16, flex: 1 },
   storiesBar:   { backgroundColor: PURPLE, borderRadius: 14, padding: 14, marginBottom: 12, alignItems: 'center' },
   storiesBarTxt:{ color: '#fff', fontWeight: '800', fontSize: 14 },
   addDefiBtn:   { backgroundColor: '#ede9fe', borderRadius: 14, padding: 12, marginBottom: 12, alignItems: 'center' },
@@ -541,15 +536,17 @@ const s = StyleSheet.create({
   doBtn:        { backgroundColor: PURPLE, borderRadius: 20, padding: 10, alignItems: 'center' },
   doBtnTxt:     { color: '#fff', fontWeight: '700' },
   validated:    { color: '#16a34a', fontWeight: '800' },
-  nav:          { flexDirection: 'row', backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#ede9fe', paddingVertical: 8 },
-  navBtn:       { flex: 1, alignItems: 'center', padding: 4 },
+  nav:          { flexDirection: 'row', backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#ede9fe', paddingVertical: 8, justifyContent: 'space-around' },
+  navBtn:       { alignItems: 'center', padding: 8, flex: 1, opacity: 0.4 },
+  navBtnActive: { opacity: 1 },
   navIcon:      { fontSize: 22 },
-  navLbl:       { fontSize: 11, fontWeight: '700', color: PURPLE },
+  navLbl:       { fontSize: 11, fontWeight: '700', color: PURPLE, marginTop: 2 },
   proofCard:    { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  proofImg:     { width: '100%', height: 220, borderRadius: 12, marginBottom: 12 },
+  proofImg:     { width: '100%', maxHeight: 300, borderRadius: 12, marginBottom: 12, resizeMode: 'contain', backgroundColor: '#000' },
+  webVideo:     { width: '100%', maxHeight: 300, borderRadius: 12, marginBottom: 12, backgroundColor: '#000' },
   proofEmoji:   { fontSize: 40, textAlign: 'center', marginBottom: 8 },
-  proofName:    { fontWeight: '800', fontSize: 15, color: '#1a1a2e' },
-  proofText:    { fontSize: 14, fontStyle: 'italic', color: '#555', marginVertical: 6, lineHeight: 20 },
+  proofName:    { fontWeight: '600', fontSize: 15, color: '#1a1a2e' },
+  proofText:    { fontSize: 16, fontStyle: 'italic', color: '#2d1b69', fontWeight: '800', marginVertical: 6, lineHeight: 22 },
   proofPts:     { fontWeight: '800', color: PURPLE, marginBottom: 4 },
   proofVotes:   { fontSize: 12, color: '#aaa', marginBottom: 12 },
   voteRow:      { flexDirection: 'row', gap: 8 },
