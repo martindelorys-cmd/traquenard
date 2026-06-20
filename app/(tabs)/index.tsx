@@ -88,6 +88,7 @@ export default function App() {
   const [loserDefi, setLoserDefi]     = useState('');
   const [showCode, setShowCode]       = useState(false);
   const [showAddDefi, setShowAddDefi] = useState(false);
+  const [dernierGroupe, setDernierGroupe] = useState('');
   const [newDefiText, setNewDefiText] = useState('');
   const [newDefiPts, setNewDefiPts]   = useState('10');
 
@@ -103,6 +104,13 @@ export default function App() {
     }, (err) => console.error("Erreur Firestore sécurisée:", err));
     return unsub;
   }, [groupId]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('dernierGroupeCode');
+      if (saved) setDernierGroupe(saved);
+    }
+  }, []);
 
 async function createGroup() {
     if (!groupName.trim()) {
@@ -133,6 +141,7 @@ async function createGroup() {
       proofs: [],
     });
     setGroupId(ref.id);
+    if (typeof window !== 'undefined') window.localStorage.setItem('dernierGroupeCode', code);
     setScreen('lobby');
     setLoading(false);
   }
@@ -160,6 +169,7 @@ async function joinGroup() {
       members: arrayUnion({ pseudo, points: 0, done: [] }),
     });
     setGroupId(groupDoc.id);
+    if (typeof window !== 'undefined') window.localStorage.setItem('dernierGroupeCode', groupCode.toUpperCase());
     setScreen('lobby');
     setLoading(false);
   }
@@ -318,6 +328,16 @@ async function joinGroup() {
       <TouchableOpacity style={[s.btn, { backgroundColor: '#ede9fe' }]} onPress={joinGroup} disabled={loading}>
         {loading ? <ActivityIndicator color={PURPLE} /> : <Text style={[s.btnTxt, { color: PURPLE }]}>Rejoindre</Text>}
       </TouchableOpacity>
+
+      {dernierGroupe ? (
+        <TouchableOpacity
+          style={[s.btn, { backgroundColor: '#fff', borderWidth: 2, borderColor: PURPLE, marginTop: 16 }]}
+          onPress={() => { setGroupCode(dernierGroupe); joinGroup(); }}
+          disabled={loading}
+        >
+          <Text style={[s.btnTxt, { color: PURPLE }]}>↩️ Reprendre {dernierGroupe}</Text>
+        </TouchableOpacity>
+      ) : null}
     </ScrollView>
   );
 
