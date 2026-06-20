@@ -169,6 +169,20 @@ async function joinGroup() {
     setScreen('game');
   }
 
+  function changerDeGroupe() {
+    const confirmer = typeof window !== 'undefined'
+      ? window.confirm('Quitter ce groupe et retourner à l\'accueil ?')
+      : true;
+    if (!confirmer) return;
+    setGroupId('');
+    setGroup(null);
+    setGroupCode('');
+    setGroupName('');
+    setSelectedCat('');
+    setLoserDefi('');
+    setScreen('welcome');
+  }
+
   async function ajouterDefiCustom() {
     if (!newDefiText.trim()) return Alert.alert('Décris le défi !');
     if (loading) return;
@@ -398,9 +412,12 @@ async function joinGroup() {
   return (
     <View style={s.root}>
       {/* HEADER COMPLET */}
-      <View style={s.header}>
+<View style={s.header}>
         <Text style={s.logo}>Traquenard</Text>
         <View style={s.headerRight}>
+          <TouchableOpacity style={s.switchBtn} onPress={changerDeGroupe}>
+            <Text style={s.switchBtnTxt}>🔄</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={s.codeBtn} onPress={() => setShowCode(true)}>
             <Text style={s.codeBtnTxt}>🔗 {group?.code}</Text>
           </TouchableOpacity>
@@ -553,6 +570,8 @@ const s = StyleSheet.create({
   logo:         { color: '#fff', fontSize: 20, fontWeight: '900' },
   pts:          { backgroundColor: '#fff', color: PURPLE, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, fontSize: 13 },
   codeBtn:      { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  switchBtn:    { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  switchBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
   codeBtnTxt:   { color: '#fff', fontWeight: '700', fontSize: 13 },
   headerRight:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   content:      { padding: 16, flex: 1 },
