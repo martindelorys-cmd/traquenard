@@ -156,7 +156,7 @@ async function joinGroup(codeDirect?: string) {
     }
     setLoading(true);
     const { getDocs, query, where } = await import('firebase/firestore');
-    const q = query(collection(db, 'groups'), where('code', '==', codeAUtiliser.toUpperCase());
+    const q = query(collection(db, 'groups'), where('code', '==', codeAUtiliser.toUpperCase()));
     const snap = await getDocs(q);
     if (snap.empty) {
       setLoading(false);
