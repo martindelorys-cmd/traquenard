@@ -359,7 +359,7 @@ function sauvegarderGroupe(code: string, name: string) {
       <Text style={s.orTxt}>— ou rejoindre —</Text>
       <TextInput style={s.input} placeholder="Code du groupe" value={groupCode} onChangeText={setGroupCode} autoCapitalize="characters" />
       
-      <TouchableOpacity style={[s.btn, { backgroundColor: '#ede9fe' }]} onPress={joinGroup} disabled={loading}>
+      <TouchableOpacity style={[s.btn, { backgroundColor: '#ede9fe' }]} onPress={() => joinGroup()} disabled={loading}>
         {loading ? <ActivityIndicator color={PURPLE} /> : <Text style={[s.btnTxt, { color: PURPLE }]}>Rejoindre</Text>}
       </TouchableOpacity>
 
