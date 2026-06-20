@@ -121,13 +121,24 @@ export default function App() {
     setLoading(false);
   }
 
-  async function joinGroup() {
-    if (!pseudo.trim() || !groupCode.trim()) return Alert.alert('Remplis tous les champs !');
+async function joinGroup() {
+    if (!pseudo.trim() || !groupCode.trim()) {
+      const msg = 'Remplis ton prénom et le code du groupe !';
+      if (typeof window !== 'undefined') window.alert(msg);
+      else Alert.alert(msg);
+      return;
+    }
     setLoading(true);
     const { getDocs, query, where } = await import('firebase/firestore');
     const q = query(collection(db, 'groups'), where('code', '==', groupCode.toUpperCase()));
     const snap = await getDocs(q);
-    if (snap.empty) { Alert.alert('Groupe introuvable !'); setLoading(false); return; }
+    if (snap.empty) {
+      setLoading(false);
+      const msg = 'Groupe introuvable, vérifie le code !';
+      if (typeof window !== 'undefined') window.alert(msg);
+      else Alert.alert(msg);
+      return;
+    }
     const groupDoc = snap.docs[0];
     await updateDoc(doc(db, 'groups', groupDoc.id), {
       members: arrayUnion({ pseudo, points: 0, done: [] }),
@@ -260,7 +271,14 @@ export default function App() {
       <Text style={s.tagline}>Défis entre potes 🔥</Text>
       <TextInput style={s.input} placeholder="Ton prénom" value={pseudo} onChangeText={setPseudo} />
       
-      <TouchableOpacity style={s.btn} onPress={() => pseudo.trim() ? setScreen('create') : Alert.alert('Entre ton prénom !')}>
+  <TouchableOpacity style={s.btn} onPress={() => {
+        if (!pseudo.trim()) {
+          if (typeof window !== 'undefined') window.alert('Entre ton prénom !');
+          else Alert.alert('Entre ton prénom !');
+          return;
+        }
+        setScreen('create');
+      }}>
         <Text style={s.btnTxt}>Créer un groupe →</Text>
       </TouchableOpacity>
       
