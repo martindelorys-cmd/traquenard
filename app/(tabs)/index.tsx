@@ -542,7 +542,7 @@ const s = StyleSheet.create({
   navIcon:      { fontSize: 22 },
   navLbl:       { fontSize: 11, fontWeight: '700', color: PURPLE, marginTop: 2 },
   proofCard:    { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  proofImg:     { width: '100%', maxHeight: 300, borderRadius: 12, marginBottom: 12, resizeMode: 'contain', backgroundColor: '#000' },
+proofImg:     { width: '100%', height: 300, borderRadius: 12, marginBottom: 12, resizeMode: 'contain', backgroundColor: '#000' },
   webVideo:     { width: '100%', maxHeight: 300, borderRadius: 12, marginBottom: 12, backgroundColor: '#000' },
   proofEmoji:   { fontSize: 40, textAlign: 'center', marginBottom: 8 },
   proofName:    { fontWeight: '600', fontSize: 15, color: '#1a1a2e' },
