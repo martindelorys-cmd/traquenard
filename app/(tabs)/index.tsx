@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, ActivityIndicator, Image, Modal } from 'react-native';
-import { collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { addDoc, arrayUnion, collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from '../../firebase';
 
 const DEFIS: Record<string, { id: number; text: string; points: number; emoji: string }[]> = {
@@ -172,7 +172,7 @@ export default function App() {
     if (typeof document !== 'undefined') {
       const choix = window.confirm(`🎯 Réaliser ce défi : "${challenge.text}"\n\nClique sur OK pour importer une photo ou une vidéo.`);
       if (choix) ouvrirPellicule(challenge);
-      return;Reception desk
+      return;
     }
     Alert.alert('🎯 Réaliser ce défi', challenge.text, [
       { text: 'Annuler', style: 'cancel' },
