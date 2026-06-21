@@ -395,7 +395,7 @@ function changerDeGroupe() {
       <Text style={s.formTitle}>Créer un groupe</Text>
       
       <Text style={s.label}>Nom du groupe</Text>
-      <TextInput style={s.input} placeholder="Ex : Bande de l'été 🌞" value={groupName} onChangeText={setGroupName} maxLength={30} />
+      <TextInput style={s.input} placeholder="Ex : Bande de l'été 🌞" value={groupName} onChangeText={setGroupName} maxLength={29} />
       
       <Text style={s.label}>Catégorie de défis</Text>
       {CATEGORIES.map(cat => (
@@ -493,7 +493,9 @@ function changerDeGroupe() {
       {/* HEADER COMPLET */}
 <View style={s.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Text style={s.miniLogo}>Traquenard</Text>
+          <View style={s.logoPastille}>
+            <Text style={s.miniLogo}>Traquenard</Text>
+          </View>
           <View style={s.headerRight}>
             <TouchableOpacity style={s.switchBtn} onPress={changerDeGroupe}>
               <Text style={s.switchBtnTxt}>🔄</Text>
@@ -671,7 +673,8 @@ const s = StyleSheet.create({
   waiting:      { textAlign: 'center', color: '#888', marginTop: 20, fontStyle: 'italic' },
   header:       { backgroundColor: PURPLE, padding: 16, paddingTop: 16 },
   logo:         { color: '#fff', fontSize: 20, fontWeight: '900' },
-  miniLogo:     { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700' },
+  logoPastille: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  miniLogo:     { color: '#fff', fontSize: 13, fontWeight: '700' },
   groupNameHeader: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 10 },
   pts:          { backgroundColor: '#fff', color: PURPLE, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, fontSize: 13 },
   codeBtn:      { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
