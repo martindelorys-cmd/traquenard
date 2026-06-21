@@ -492,16 +492,19 @@ function changerDeGroupe() {
     <View style={s.root}>
       {/* HEADER COMPLET */}
 <View style={s.header}>
-        <Text style={s.logo} numberOfLines={2} ellipsizeMode="tail">{group?.name || 'Traquenard'}</Text>
-        <View style={[s.headerRight, { marginTop: 10 }]}>
-          <TouchableOpacity style={s.switchBtn} onPress={changerDeGroupe}>
-            <Text style={s.switchBtnTxt}>🔄</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.codeBtn} onPress={() => setShowCode(true)}>
-            <Text style={s.codeBtnTxt}>🔗 {group?.code}</Text>
-          </TouchableOpacity>
-          <Text style={s.pts}>{myPoints} pts</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Text style={s.miniLogo}>Traquenard</Text>
+          <View style={s.headerRight}>
+            <TouchableOpacity style={s.switchBtn} onPress={changerDeGroupe}>
+              <Text style={s.switchBtnTxt}>🔄</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.codeBtn} onPress={() => setShowCode(true)}>
+              <Text style={s.codeBtnTxt}>🔗 {group?.code}</Text>
+            </TouchableOpacity>
+            <Text style={s.pts}>{myPoints} pts</Text>
+          </View>
         </View>
+        <Text style={s.groupNameHeader} numberOfLines={2} ellipsizeMode="tail">{group?.name}</Text>
       </View>
 
       {/* ZONE CENTRALE CHANGEMENT D'ONGLET */}
@@ -666,8 +669,10 @@ const s = StyleSheet.create({
   memberName:   { flex: 1, fontWeight: '700', fontSize: 15 },
   adminTag:     { fontSize: 12, color: '#92400e', backgroundColor: '#fef3c7', padding: 4, borderRadius: 8 },
   waiting:      { textAlign: 'center', color: '#888', marginTop: 20, fontStyle: 'italic' },
-  header:       { backgroundColor: PURPLE, padding: 20, paddingTop: 50 },
+  header:       { backgroundColor: PURPLE, padding: 16, paddingTop: 16 },
   logo:         { color: '#fff', fontSize: 20, fontWeight: '900' },
+  miniLogo:     { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700' },
+  groupNameHeader: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 10 },
   pts:          { backgroundColor: '#fff', color: PURPLE, fontWeight: '800', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, fontSize: 13 },
   codeBtn:      { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   switchBtn:    { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
