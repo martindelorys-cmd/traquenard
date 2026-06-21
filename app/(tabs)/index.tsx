@@ -89,6 +89,7 @@ export default function App() {
   const [showCode, setShowCode]       = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [showAddDefi, setShowAddDefi] = useState(false);
   const [mesGroupes, setMesGroupes] = useState<{code: string, name: string}[]>([]);
   const [newDefiText, setNewDefiText] = useState('');
@@ -283,6 +284,7 @@ function changerDeGroupe() {
   }
 
   async function envoyerPreuve(challenge: any, uri: string, type: string, file?: File) {
+    setUploading(true);
     try {
       const formData = new FormData();
       formData.append('upload_preset', 'traquenard');
@@ -299,10 +301,11 @@ function changerDeGroupe() {
       
       await updateDoc(doc(db, 'groups', groupId), { proofs: arrayUnion(newProof), members: updatedMembers });
       
-      if (typeof window !== 'undefined') window.alert('📸 Preuve postée !');
-      else Alert.alert('📸 Posté !', 'Tes potes peuvent voter !');
+      setUploading(false);
+      afficherErreur('📸 Preuve postée ! Tes potes peuvent voter.');
     } catch (error) {
-      Alert.alert('❌ Échec de l\'envoi');
+      setUploading(false);
+      afficherErreur('❌ Échec de l\'envoi, réessaie !');
     }
   }
 
@@ -613,6 +616,16 @@ function changerDeGroupe() {
             <TextInput style={s.input} placeholder="Points (ex: 20)" value={newDefiPts} onChangeText={setNewDefiPts} keyboardType="numeric" />
             <TouchableOpacity style={s.btn} onPress={ajouterDefiCustom}><Text style={s.btnTxt}>Ajouter ✅</Text></TouchableOpacity>
             <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowAddDefi(false)}><Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={uploading} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={[s.modalBox, { alignItems: 'center' }]}>
+            <ActivityIndicator size="large" color={PURPLE} />
+            <Text style={{ marginTop: 16, fontSize: 16, fontWeight: '700', color: '#2d1b69', textAlign: 'center' }}>📤 Envoi de ta preuve...</Text>
+            <Text style={{ marginTop: 4, fontSize: 13, color: '#888', textAlign: 'center' }}>Ça ne devrait pas être long !</Text>
           </View>
         </View>
       </Modal>
