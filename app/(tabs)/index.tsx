@@ -88,6 +88,7 @@ export default function App() {
   const [loserDefi, setLoserDefi]     = useState('');
   const [showCode, setShowCode]       = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [showAddDefi, setShowAddDefi] = useState(false);
   const [mesGroupes, setMesGroupes] = useState<{code: string, name: string}[]>([]);
   const [newDefiText, setNewDefiText] = useState('');
@@ -115,21 +116,15 @@ useEffect(() => {
 
 async function createGroup() {
     if (!groupName.trim()) {
-      const msg = 'Donne un nom à ton groupe !';
-      if (typeof window !== 'undefined') window.alert(msg);
-      else Alert.alert(msg);
+      afficherErreur('Donne un nom à ton groupe !');
       return;
     }
     if (!selectedCat) {
-      const msg = 'Choisis une catégorie de défis !';
-      if (typeof window !== 'undefined') window.alert(msg);
-      else Alert.alert(msg);
+      afficherErreur('Choisis une catégorie de défis !');
       return;
     }
     if (!loserDefi.trim()) {
-      const msg = 'Indique le défi du perdant !';
-      if (typeof window !== 'undefined') window.alert(msg);
-      else Alert.alert(msg);
+      afficherErreur('Indique le défi du perdant !');
       return;
     }
     setLoading(true);
@@ -150,9 +145,7 @@ async function createGroup() {
 async function joinGroup(codeDirect?: string) {
     const codeAUtiliser = codeDirect || groupCode;
     if (!pseudo.trim() || !codeAUtiliser.trim()) {
-      const msg = 'Remplis ton prénom et le code du groupe !';
-      if (typeof window !== 'undefined') window.alert(msg);
-      else Alert.alert(msg);
+      afficherErreur('Remplis ton prénom et le code du groupe !');
       return;
     }
     setLoading(true);
@@ -161,9 +154,7 @@ async function joinGroup(codeDirect?: string) {
     const snap = await getDocs(q);
     if (snap.empty) {
       setLoading(false);
-      const msg = 'Groupe introuvable, vérifie le code !';
-      if (typeof window !== 'undefined') window.alert(msg);
-      else Alert.alert(msg);
+      afficherErreur('Groupe introuvable, vérifie le code !');
       return;
     }
     const groupDoc = snap.docs[0];
@@ -207,6 +198,10 @@ function sauvegarderGroupe(code: string, name: string) {
 
 function changerDeGroupe() {
     setShowQuitConfirm(true);
+  }
+
+  function afficherErreur(msg: string) {
+    setErrorMsg(msg);
   }
 
   function confirmerChangerDeGroupe() {
@@ -377,6 +372,15 @@ function changerDeGroupe() {
           ))}
         </View>
       ) : null}
+      <Modal visible={!!errorMsg} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={s.modalBox}>
+            <Text style={s.modalTitle}>⚠️ Oups</Text>
+            <Text style={{ textAlign: 'center', color: '#555', marginBottom: 16 }}>{errorMsg}</Text>
+            <TouchableOpacity style={s.btn} onPress={() => setErrorMsg('')}><Text style={s.btnTxt}>OK</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 
@@ -402,6 +406,16 @@ function changerDeGroupe() {
       <TouchableOpacity style={[s.btn, { marginTop: 8 }]} onPress={createGroup} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnTxt}>Créer et inviter mes potes 🚀</Text>}
       </TouchableOpacity>
+
+      <Modal visible={!!errorMsg} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={s.modalBox}>
+            <Text style={s.modalTitle}>⚠️ Oups</Text>
+            <Text style={{ textAlign: 'center', color: '#555', marginBottom: 16 }}>{errorMsg}</Text>
+            <TouchableOpacity style={s.btn} onPress={() => setErrorMsg('')}><Text style={s.btnTxt}>OK</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 
