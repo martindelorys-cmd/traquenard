@@ -167,11 +167,15 @@ async function joinGroup(codeDirect?: string) {
       return;
     }
     const groupDoc = snap.docs[0];
-    await updateDoc(doc(db, 'groups', groupDoc.id), {
-      members: arrayUnion({ pseudo, points: 0, done: [] }),
-    });
+    const groupData = groupDoc.data();
+    const dejaMembre = (groupData.members || []).some((m: any) => m.pseudo === pseudo);
+    if (!dejaMembre) {
+      await updateDoc(doc(db, 'groups', groupDoc.id), {
+        members: arrayUnion({ pseudo, points: 0, done: [] }),
+      });
+    }
     setGroupId(groupDoc.id);
-    sauvegarderGroupe(groupDoc.data().code, groupDoc.data().name);
+    sauvegarderGroupe(groupData.code, groupData.name);
     setScreen('lobby');
     setLoading(false);
   }
