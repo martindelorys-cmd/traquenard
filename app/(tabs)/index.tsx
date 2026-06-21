@@ -426,6 +426,7 @@ function changerDeGroupe() {
 
   if (screen === 'lobby') return (
     <ScrollView contentContainerStyle={s.formScreen}>
+      <TouchableOpacity onPress={() => setScreen('welcome')}><Text style={s.back}>← Retour</Text></TouchableOpacity>
       <Text style={s.bigLogo}>Traquenard</Text>
       <Text style={s.groupName}>{group?.name}</Text>
       
@@ -491,7 +492,7 @@ function changerDeGroupe() {
     <View style={s.root}>
       {/* HEADER COMPLET */}
 <View style={s.header}>
-        <Text style={s.logo}>Traquenard</Text>
+        <Text style={s.logo}>{group?.name || 'Traquenard'}</Text>
         <View style={s.headerRight}>
           <TouchableOpacity style={s.switchBtn} onPress={changerDeGroupe}>
             <Text style={s.switchBtnTxt}>🔄</Text>
