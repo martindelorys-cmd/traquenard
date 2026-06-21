@@ -306,7 +306,6 @@ function changerDeGroupe() {
       await updateDoc(doc(db, 'groups', groupId), { proofs: arrayUnion(newProof), members: updatedMembers });
       
       setUploading(false);
-      afficherErreur('📸 Preuve postée ! Tes potes peuvent voter.');
     } catch (error) {
       setUploading(false);
       afficherErreur('❌ Échec de l\'envoi, réessaie !');
