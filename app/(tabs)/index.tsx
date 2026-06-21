@@ -198,6 +198,10 @@ function sauvegarderGroupe(code: string, name: string) {
   }
 
 function changerDeGroupe() {
+    if (uploading) {
+      afficherErreur('Patiente, ta preuve est en cours d\'envoi !');
+      return;
+    }
     setShowQuitConfirm(true);
   }
 
