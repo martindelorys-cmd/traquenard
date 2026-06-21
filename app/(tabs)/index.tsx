@@ -334,8 +334,7 @@ function changerDeGroupe() {
       
   <TouchableOpacity style={s.btn} onPress={() => {
         if (!pseudo.trim()) {
-          if (typeof window !== 'undefined') window.alert('Entre ton prénom !');
-          else Alert.alert('Entre ton prénom !');
+          afficherErreur('Entre ton prénom !');
           return;
         }
         setScreen('create');
