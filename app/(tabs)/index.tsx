@@ -395,7 +395,7 @@ function changerDeGroupe() {
       <Text style={s.formTitle}>Créer un groupe</Text>
       
       <Text style={s.label}>Nom du groupe</Text>
-      <TextInput style={s.input} placeholder="Ex : Bande de l'été 🌞" value={groupName} onChangeText={setGroupName} maxLength={20} />
+      <TextInput style={s.input} placeholder="Ex : Bande de l'été 🌞" value={groupName} onChangeText={setGroupName} maxLength={25} />
       
       <Text style={s.label}>Catégorie de défis</Text>
       {CATEGORIES.map(cat => (
