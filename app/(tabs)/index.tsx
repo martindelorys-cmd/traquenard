@@ -336,7 +336,7 @@ function changerDeGroupe() {
     <ScrollView contentContainerStyle={s.center}>
       <Text style={s.bigLogo}>Traquenard</Text>
       <Text style={s.tagline}>Défis entre potes 🔥</Text>
-      <TextInput style={s.input} placeholder="Ton prénom" value={pseudo} onChangeText={setPseudo} />
+      <TextInput style={s.input} placeholder="Ton prénom" value={pseudo} onChangeText={setPseudo} maxLength={15} />
       
   <TouchableOpacity style={s.btn} onPress={() => {
         if (!pseudo.trim()) {
@@ -395,7 +395,7 @@ function changerDeGroupe() {
       <Text style={s.formTitle}>Créer un groupe</Text>
       
       <Text style={s.label}>Nom du groupe</Text>
-      <TextInput style={s.input} placeholder="Ex : Bande de l'été 🌞" value={groupName} onChangeText={setGroupName} />
+      <TextInput style={s.input} placeholder="Ex : Bande de l'été 🌞" value={groupName} onChangeText={setGroupName} maxLength={20} />
       
       <Text style={s.label}>Catégorie de défis</Text>
       {CATEGORIES.map(cat => (
@@ -406,7 +406,7 @@ function changerDeGroupe() {
       ))}
       
       <Text style={s.label}>Défi du perdant 🍽️</Text>
-      <TextInput style={s.input} placeholder="Ex : payer le restau, se raser la tête..." value={loserDefi} onChangeText={setLoserDefi} />
+      <TextInput style={s.input} placeholder="Ex : payer le restau, se raser la tête..." value={loserDefi} onChangeText={setLoserDefi} maxLength={40} />
       
       <TouchableOpacity style={[s.btn, { marginTop: 8 }]} onPress={createGroup} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnTxt}>Créer et inviter mes potes 🚀</Text>}
@@ -471,7 +471,7 @@ function changerDeGroupe() {
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
             <Text style={s.modalTitle}>➕ Nouveau défi</Text>
-            <TextInput style={s.input} placeholder="Décris le défi..." value={newDefiText} onChangeText={setNewDefiText} multiline />
+            <TextInput style={s.input} placeholder="Décris le défi..." value={newDefiText} onChangeText={setNewDefiText} multiline maxLength={60} />
             <TextInput style={s.input} placeholder="Points (ex: 20)" value={newDefiPts} onChangeText={setNewDefiPts} keyboardType="numeric" />
             <TouchableOpacity style={s.btn} onPress={ajouterDefiCustom}><Text style={s.btnTxt}>Ajouter ✅</Text></TouchableOpacity>
             <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowAddDefi(false)}><Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text></TouchableOpacity>          </View>
@@ -492,7 +492,7 @@ function changerDeGroupe() {
     <View style={s.root}>
       {/* HEADER COMPLET */}
 <View style={s.header}>
-        <Text style={s.logo}>{group?.name || 'Traquenard'}</Text>
+        <Text style={s.logo} numberOfLines={1} ellipsizeMode="tail">{group?.name || 'Traquenard'}</Text>
         <View style={s.headerRight}>
           <TouchableOpacity style={s.switchBtn} onPress={changerDeGroupe}>
             <Text style={s.switchBtnTxt}>🔄</Text>
@@ -616,7 +616,7 @@ function changerDeGroupe() {
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
             <Text style={s.modalTitle}>➕ Nouveau défi</Text>
-            <TextInput style={s.input} placeholder="Décris le défi..." value={newDefiText} onChangeText={setNewDefiText} multiline />
+            <TextInput style={s.input} placeholder="Décris le défi..." value={newDefiText} onChangeText={setNewDefiText} multiline maxLength={60} />
             <TextInput style={s.input} placeholder="Points (ex: 20)" value={newDefiPts} onChangeText={setNewDefiPts} keyboardType="numeric" />
             <TouchableOpacity style={s.btn} onPress={ajouterDefiCustom}><Text style={s.btnTxt}>Ajouter ✅</Text></TouchableOpacity>
             <TouchableOpacity style={[s.btn, { backgroundColor: '#fee2e2', marginTop: 4 }]} onPress={() => setShowAddDefi(false)}><Text style={[s.btnTxt, { color: '#dc2626' }]}>Annuler</Text></TouchableOpacity>
